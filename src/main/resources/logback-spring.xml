@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Đọc các biến từ file application.yml/properties nếu cần -->
+    <springProperty scope="context" name="LOG_DIR" source="logging.file.path" defaultValue="logs"/>
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="application"/>
+
+    <!-- Biến cục bộ cho định dạng log -->
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!-- 1. Console Appender: Dùng cho Development -->
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- Sử dụng Pattern có màu sắc riêng cho Console -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 2. Rolling File Appender: Dùng cho Production -->
+
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+
+        <!-- Chính sách cuộn: Theo thời gian VÀ dung lượng -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- Lưu vào thư mục archived, nén lại, đánh số %i nếu có nhiều file cùng ngày -->
+            <fileNamePattern>${LOG_DIR}/archived/${APP_NAME}-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+
+            <maxFileSize>50MB</maxFileSize>
+
+            <maxHistory>60</maxHistory>
+
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+
+    <!-- 3. Phân chia Profile -->
+
+    <!-- Môi trường DEV: In log ra console để debug nhanh -->
+    <springProfile name="dev">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ROLLING_FILE"/>
+        </root>
+        <logger name="com.re.rebankapp" level="DEBUG"/>
+    </springProfile>
+
+
+    <!-- Môi trường PROD: Chỉ ghi vào file, tắt log console để tối ưu CPU -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="ROLLING_FILE"/>
+        </root>
+    </springProfile>
+</configuration>

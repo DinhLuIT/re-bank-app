@@ -18,4 +18,4 @@ jwt:
 logging:
   level:
     root: INFO
-    com.rikkei.bank: INFO
+    com.re.rebankapp: INFO

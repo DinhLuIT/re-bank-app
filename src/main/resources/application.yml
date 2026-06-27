@@ -1,10 +1,12 @@
 spring:
   application:
-    name: rikkei-bank-api
+    name: re-bank-app
   profiles:
     active: dev
   config:
     import: optional:file:.env[.properties]
+  jpa:
+    open-in-view: false
 
 cloudinary:
   url: ${CLOUDINARY_URL}

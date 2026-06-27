@@ -26,5 +26,5 @@ jwt:
 
 logging:
   level:
-    com.rikkei.bank: DEBUG
+    com.re.rebankapp: DEBUG
     org.springframework.security: DEBUG
