@@ -1,32 +1,44 @@
 package com.re.rebankapp.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.re.rebankapp.entity.User;
-import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
-@RequiredArgsConstructor
+@Getter
+@AllArgsConstructor
+@Builder
 public class UserDetailsImpl implements UserDetails {
-    private final User user;
+    private final Long id;
+    private final String username;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority(user.getRole().getName().name()));
-    }
+    @JsonIgnore
+    private final String password;
+    
+    private final boolean isActive;
 
-    @Override
-    public @Nullable String getPassword() {
-        return user.getPassword();
-    }
+    private final Collection<? extends GrantedAuthority> authorities;
 
-    @Override
-    public String getUsername() {
-        return user.getUsername();
+    public static UserDetailsImpl build(User user) {
+        List<GrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority(user.getRole().getName().name())
+        );
+
+        return UserDetailsImpl.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .isActive(user.getIsActive())
+                .authorities(authorities)
+                .build();
     }
 
     @Override
@@ -36,7 +48,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return user.getIsActive();
+        return isActive;
     }
 
     @Override
@@ -46,6 +58,6 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.getIsActive();
+        return isActive;
     }
 }

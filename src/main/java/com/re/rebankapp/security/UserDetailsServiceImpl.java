@@ -20,6 +20,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy User: " + username));
 
-        return new UserDetailsImpl(user);
+        return UserDetailsImpl.build(user);
     }
 }
