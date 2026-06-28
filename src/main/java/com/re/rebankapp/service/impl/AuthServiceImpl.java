@@ -27,6 +27,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -84,8 +85,9 @@ public class AuthServiceImpl implements AuthService {
 
         User user = new User();
         user.setUsername(registerRequest.getUsername());
-        user.setPassword(registerRequest.getPassword());
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         user.setEmail(registerRequest.getEmail());
+        user.setPhoneNumber(registerRequest.getPhoneNumber());
         user.setIsActive(true);
         user.setIsKyc(false);
 
@@ -126,6 +128,7 @@ public class AuthServiceImpl implements AuthService {
             Date expirationDate = jwtUtils.getExpirationDateFromJwtToken(accessToken);
             LocalDateTime expiryAt = expirationDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
+            // đưa access token vào blacklist
             TokenBlacklist blacklist = TokenBlacklist.builder()
                     .accessToken(accessToken)
                     .blacklistedAt(LocalDateTime.now())
@@ -133,6 +136,15 @@ public class AuthServiceImpl implements AuthService {
                     .build();
 
             tokenBlackListRepository.save(blacklist);
+            
+            // tìm username từ token và xóa Refresh Token tương ứng
+            String username = jwtUtils.getUserNameFromJwtToken(accessToken);
+
+            userRepository.findByUsername(username).ifPresent(user -> {
+                refreshTokenService.deleteByUserId(user.getId());
+                log.info("Đã xóa Refresh Token của user {}", username);
+            });
+            
             log.info("Đã đưa token vào Sổ đen (đăng xuất)");
         }
     }

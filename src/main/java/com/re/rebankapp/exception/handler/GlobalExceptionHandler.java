@@ -11,6 +11,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +51,32 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    // BẮT LỖI SAI MẬT KHẨU
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(BadCredentialsException exception) {
+        log.warn("Login Failed: Wrong username or password");
+        
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code(ResponseCode.INVALID_CREDENTIALS.getCode())
+                .message(ResponseCode.INVALID_CREDENTIALS.getMessage())
+                .build();
+                
+        return ResponseEntity.status(ResponseCode.INVALID_CREDENTIALS.getHttpStatus()).body(response);
+    }
+
+    // BẮT LỖI SAI METHOD HTTP (GET/POST/PUT/DELETE)
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException exception) {
+        log.warn("Method Not Allowed: {}", exception.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code(ResponseCode.METHOD_NOT_ALLOWED.getCode())
+                .message(ResponseCode.METHOD_NOT_ALLOWED.getMessage())
+                .build();
+
+        return ResponseEntity.status(ResponseCode.METHOD_NOT_ALLOWED.getHttpStatus()).body(response);
     }
 
     // BẮT LỖI HỆ THỐNG

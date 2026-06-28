@@ -10,6 +10,7 @@ import com.re.rebankapp.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -26,12 +27,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     private Long refreshTokenDurationMs;
 
     @Override
-    public RefreshToken createRefreshToken(Long userId){
+    public RefreshToken createRefreshToken(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ResponseCode.USER_NOT_FOUND));
 
         // tìm token cũ ( nếu có ), nếu không có thì tạo token mới
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(user.getUsername())
+        RefreshToken refreshToken = refreshTokenRepository.findByUser(user)
                 .orElse(new RefreshToken());
 
         refreshToken.setUser(user);
@@ -43,8 +44,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public RefreshToken verifyExpiration(RefreshToken token){
-        if (token.getExpiryDate().compareTo(Instant.now()) < 0 || token.getRevoked()){
+    public RefreshToken verifyExpiration(RefreshToken token) {
+        if (token.getExpiryDate().compareTo(Instant.now()) < 0 || token.getRevoked()) {
             refreshTokenRepository.delete(token);
             throw new AppException(ResponseCode.TOKEN_EXPIRED);
         }
@@ -53,7 +54,16 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public Optional<RefreshToken> findByToken(String token){
+    public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
+    }
+
+    @Override
+    @Transactional
+    public void deleteByUserId(Long userId) {
+        userRepository.findById(userId).flatMap(refreshTokenRepository::findByUser).ifPresent(token -> {
+            token.setRevoked(true);
+            refreshTokenRepository.save(token);
+        });
     }
 }
