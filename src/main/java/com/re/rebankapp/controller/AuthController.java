@@ -50,7 +50,7 @@ public class AuthController {
         if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
             String accessToken = headerAuth.substring(7);
             authService.logout(accessToken);
-            return ResponseEntity.ok(ApiResponse.success("Đăng xuất thành công"));
+            return ResponseEntity.ok(ApiResponse.success());
         }
         
         throw new AppException(ResponseCode.UNAUTHORIZED);
