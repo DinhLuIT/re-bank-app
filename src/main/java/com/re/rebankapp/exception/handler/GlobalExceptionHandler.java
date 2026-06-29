@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.validation.BindException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @Slf4j
 @RestControllerAdvice
@@ -29,7 +31,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException exception) {
         ResponseCode responseCode = exception.getResponseCode();
 
-        log.warn("Business Exception: Code = {}, Message = {}", responseCode.getCode(), responseCode.getMessage());
+        log.warn("Lỗi nghiệp vụ: Code = {}, Message = {}", responseCode.getCode(), responseCode.getMessage());
 
         ApiResponse<Void> response = ApiResponse.error(responseCode);
 
@@ -49,7 +51,7 @@ public class GlobalExceptionHandler {
             }
         }
 
-        log.warn("Validation Error: {}", errors);
+        log.warn("Lỗi Validation: {}", errors);
 
         ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
                 .code(ResponseCode.BAD_REQUEST.getCode())
@@ -63,7 +65,7 @@ public class GlobalExceptionHandler {
     // BẮT LỖI SAI MẬT KHẨU
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(BadCredentialsException exception) {
-        log.warn("Login Failed: Wrong username or password");
+        log.warn("Đăng nhập thất bại: Sai tên đăng nhập hoặc mật khẩu");
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .code(ResponseCode.INVALID_CREDENTIALS.getCode())
@@ -76,7 +78,7 @@ public class GlobalExceptionHandler {
     // BẮT LỖI SAI METHOD HTTP (GET/POST/PUT/DELETE)
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException exception) {
-        log.warn("Method Not Allowed: {}", exception.getMessage());
+        log.warn("Phương thức HTTP không được hỗ trợ: {}", exception.getMessage());
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .code(ResponseCode.METHOD_NOT_ALLOWED.getCode())
@@ -89,7 +91,7 @@ public class GlobalExceptionHandler {
     // BẮT LỖI FORMAT DỮ LIỆU (VD: Truyền sai Enum, sai kiểu số)
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException exception) {
-        log.warn("Invalid Data Format: {}", exception.getMessage());
+        log.warn("Sai định dạng dữ liệu đầu vào: {}", exception.getMessage());
 
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .code(ResponseCode.BAD_REQUEST.getCode())
@@ -99,10 +101,37 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    // BẮT LỖI SAI KIỂU DỮ LIỆU CỦA THAM SỐ (VD: Truyền 'abc' vào Enum Status trên URL)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatchException(MethodArgumentTypeMismatchException exception) {
+        log.warn("Lỗi sai kiểu dữ liệu: Tham số '{}' có giá trị '{}' không thể chuyển đổi sang kiểu {}",
+                exception.getName(), exception.getValue(), exception.getRequiredType() != null ? exception.getRequiredType().getSimpleName() : "Unknown");
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code(ResponseCode.BAD_REQUEST.getCode())
+                .message("Tham số '" + exception.getName() + "' không hợp lệ (Sai định dạng hoặc giá trị không tồn tại)")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    // BẮT LỖI TỪ CHỐI QUYỀN TRUY CẬP (VD: Customer gọi API Admin)
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException exception) {
+        log.warn("Từ chối quyền truy cập: {}", exception.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code(ResponseCode.FORBIDDEN.getCode())
+                .message(ResponseCode.FORBIDDEN.getMessage())
+                .build();
+
+        return ResponseEntity.status(ResponseCode.FORBIDDEN.getHttpStatus()).body(response);
+    }
+
     // BẮT LỖI HỆ THỐNG
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception exception) {
-        log.error("Internal Server Error: ", exception);
+        log.error("Lỗi hệ thống nội bộ: ", exception);
 
         ApiResponse<Void> response = ApiResponse.error(ResponseCode.INTERNAL_SERVER_ERROR);
 

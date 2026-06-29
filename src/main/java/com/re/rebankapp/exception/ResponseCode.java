@@ -45,6 +45,12 @@ public enum ResponseCode {
     KYC_PENDING(4304, "Hồ sơ định danh đang chờ duyệt, không thể gửi lại", HttpStatus.BAD_REQUEST),
     IMAGE_UPLOAD_FAILED(4305, "Tải ảnh định danh lên hệ thống thất bại", HttpStatus.INTERNAL_SERVER_ERROR),
 
+    // LỖI MÃ PIN GIAO DỊCH [TRANSACTION PIN] (45xx)
+    INVALID_OLD_PIN(4501, "Mã PIN hiện tại không chính xác", HttpStatus.BAD_REQUEST),
+    PIN_CONFIRM_MISMATCH(4502, "Mã PIN mới và xác nhận mã PIN không khớp", HttpStatus.BAD_REQUEST),
+    INVALID_PASSWORD_FOR_PIN_RESET(4503, "Mật khẩu đăng nhập không chính xác, không thể đặt lại mã PIN", HttpStatus.BAD_REQUEST),
+    NEW_PIN_SAME_AS_OLD(4504, "Mã PIN mới không được trùng với mã PIN hiện tại", HttpStatus.BAD_REQUEST),
+
     // LỖI TÀI KHOẢN NGÂN HÀNG & GIAO DỊCH [CORE BANKING] (44xx)
     BANK_ACCOUNT_NOT_FOUND(4401, "Không tìm thấy tài khoản ngân hàng", HttpStatus.NOT_FOUND),
     INSUFFICIENT_BALANCE(4402, "Số dư tài khoản không đủ để thực hiện giao dịch", HttpStatus.BAD_REQUEST),
