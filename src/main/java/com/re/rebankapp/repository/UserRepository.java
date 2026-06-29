@@ -19,7 +19,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = {"role"})
     Optional<User> findByUsername(String username);
 
-    // FR-05: Lấy danh sách người dùng (JPQL Projection) - Không bao giờ trả về password
     @Query("SELECT new com.re.rebankapp.dto.response.UserResponseDto(" +
             "u.id, u.username, u.email, u.phoneNumber, u.isActive, u.isKyc, r.name, u.createdAt) " +
             "FROM User u JOIN u.role r " +
