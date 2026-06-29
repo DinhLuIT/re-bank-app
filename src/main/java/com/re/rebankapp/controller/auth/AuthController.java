@@ -1,4 +1,4 @@
-package com.re.rebankapp.controller;
+package com.re.rebankapp.controller.auth;
 
 import com.re.rebankapp.dto.request.LoginRequest;
 import com.re.rebankapp.dto.request.RefreshTokenRequest;

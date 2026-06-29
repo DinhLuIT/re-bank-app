@@ -1,4 +1,4 @@
-package com.re.rebankapp.controller;
+package com.re.rebankapp.controller.admin;
 
 import com.re.rebankapp.dto.response.ApiResponse;
 import com.re.rebankapp.dto.response.KycAdminResponse;

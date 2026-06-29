@@ -1,5 +1,6 @@
 package com.re.rebankapp.controller;
 
+import com.re.rebankapp.controller.auth.AuthController;
 import com.re.rebankapp.dto.request.LoginRequest;
 import com.re.rebankapp.dto.response.ApiResponse;
 import com.re.rebankapp.dto.response.AuthResponse;

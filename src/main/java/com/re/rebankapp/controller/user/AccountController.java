@@ -1,4 +1,4 @@
-package com.re.rebankapp.controller;
+package com.re.rebankapp.controller.user;
 
 import com.re.rebankapp.dto.request.ChangePinRequest;
 import com.re.rebankapp.dto.request.ForgotPinRequest;
