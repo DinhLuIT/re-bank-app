@@ -58,6 +58,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasAnyAuthority("ADMIN", "STAFF")
+                        .requestMatchers("/api/v1/kyc/**").hasAuthority("CUSTOMER")
                         .anyRequest().authenticated()
                 );
 

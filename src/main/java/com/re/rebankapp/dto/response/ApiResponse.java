@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 public class ApiResponse<T> {
 
     @Builder.Default
-    private LocalDateTime timeStamp = LocalDateTime.now();
+    private LocalDateTime timestamp = LocalDateTime.now();
     private int code;
     private String message;
     private T data;

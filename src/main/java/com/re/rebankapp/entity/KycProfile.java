@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.re.rebankapp.enums.Gender;
 
 @Entity
 @Table(name = "kyc_profiles")
@@ -30,8 +31,9 @@ public class KycProfile {
     @Column(nullable = false)
     private LocalDate dob;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 10)
-    private String sex;
+    private Gender gender;
 
     private String address;
 

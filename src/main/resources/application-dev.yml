@@ -19,6 +19,11 @@ spring:
       name: user
       password: password123
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
 jwt:
   secret: ${JWT_SECRET}
   access-expiration: 900000
@@ -28,3 +33,8 @@ logging:
   level:
     com.re.rebankapp: DEBUG
     org.springframework.security: DEBUG
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
