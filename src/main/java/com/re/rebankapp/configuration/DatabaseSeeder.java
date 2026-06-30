@@ -5,6 +5,9 @@ import com.re.rebankapp.entity.User;
 import com.re.rebankapp.enums.RoleName;
 import com.re.rebankapp.repository.RoleRepository;
 import com.re.rebankapp.repository.UserRepository;
+import com.re.rebankapp.repository.AccountRepository;
+import com.re.rebankapp.entity.Account;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -20,6 +23,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -53,6 +57,36 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             userRepository.save(adminUser);
             log.info("Đã tạo tài khoản Admin mặc định (admin / Admin@123)");
+        }
+
+        // Khởi tạo tài khoản Customer mẫu có sẵn tiền để test
+        if (userRepository.findByUsername("testuser").isEmpty()) {
+            Role customerRole = roleRepository.findByName(RoleName.CUSTOMER)
+                    .orElseThrow(() -> new RuntimeException("Role CUSTOMER không tồn tại"));
+
+            User testUser = new User();
+            testUser.setUsername("testuser");
+            testUser.setPassword(passwordEncoder.encode("Abcd@1234"));
+            testUser.setEmail("testuser@rebank.com");
+            testUser.setPhoneNumber("0987654321");
+            testUser.setIsActive(true);
+            testUser.setIsKyc(true);
+            testUser.setRole(customerRole);
+            
+            userRepository.save(testUser);
+
+            Account testAccount = Account.builder()
+                    .accountNumber("9999999999")
+                    .balance(new BigDecimal("5000000.00")) // 5 triệu
+                    .currency("VND")
+                    .transactionPin(passwordEncoder.encode("123456")) // Mã PIN là 123456
+                    .active(true)
+                    .user(testUser)
+                    .build();
+            
+            accountRepository.save(testAccount);
+
+            log.info("Đã tạo tài khoản Test User (testuser / Abcd@1234) với số dư 5.000.000 VND và mã PIN: 123456");
         }
 
         log.info("Hoàn tất khởi tạo dữ liệu mẫu.");

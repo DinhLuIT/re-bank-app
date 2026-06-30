@@ -53,7 +53,7 @@ public enum ResponseCode {
 
     // LỖI TÀI KHOẢN NGÂN HÀNG & GIAO DỊCH [CORE BANKING] (44xx)
     BANK_ACCOUNT_NOT_FOUND(4401, "Không tìm thấy tài khoản ngân hàng", HttpStatus.NOT_FOUND),
-    INSUFFICIENT_BALANCE(4402, "Số dư tài khoản không đủ để thực hiện giao dịch", HttpStatus.BAD_REQUEST),
+    INSUFFICIENT_BALANCE(4402, "Số dư tài khoản không đủ để thực hiện giao dịch", HttpStatus.CONFLICT),
     TRANSACTION_NOT_FOUND(4403, "Không tìm thấy mã giao dịch này", HttpStatus.NOT_FOUND),
     INVALID_TRANSACTION_AMOUNT(4404, "Số tiền giao dịch không hợp lệ (phải lớn hơn 0)", HttpStatus.BAD_REQUEST),
     SAME_ACCOUNT_TRANSFER(4405, "Không thể tự chuyển tiền cho chính mình", HttpStatus.BAD_REQUEST),
