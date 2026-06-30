@@ -4,7 +4,6 @@ import com.re.rebankapp.dto.request.TransferRequest;
 import com.re.rebankapp.dto.response.ApiResponse;
 import com.re.rebankapp.dto.response.PageMeta;
 import com.re.rebankapp.dto.response.StatementResponse;
-import com.re.rebankapp.exception.ResponseCode;
 import com.re.rebankapp.service.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,25 +24,37 @@ public class TransactionController {
 
     private final TransactionService transactionService;
 
-    @GetMapping("/accounts/balance")
-    public ApiResponse<Map<String, BigDecimal>> getBalance() {
-        BigDecimal balance = transactionService.getBalance();
+    /**
+     * Vấn tin số dư cho một tài khoản cụ thể (Kiến trúc 1-N).
+     * Bắt buộc truyền accountId để chỉ định rõ tài khoản nào cần tra cứu.
+     */
+    @GetMapping("/accounts/{accountId}/balance")
+    public ApiResponse<Map<String, BigDecimal>> getBalance(@PathVariable Long accountId) {
+        BigDecimal balance = transactionService.getBalance(accountId);
         return ApiResponse.success(Map.of("balance", balance));
     }
 
+    /**
+     * Chuyển tiền - sourceAccountId nằm bên trong body TransferRequest.
+     */
     @PostMapping("/transactions/transfer")
     public ApiResponse<Void> transfer(@Valid @RequestBody TransferRequest request) {
         transactionService.transfer(request);
         return ApiResponse.success();
     }
 
-    @GetMapping("/transactions/statement")
+    /**
+     * Sao kê
+     * Bắt buộc truyền accountId để chỉ định rõ tài khoản nào cần xem sao kê.
+     */
+    @GetMapping("/accounts/{accountId}/statements")
     public ApiResponse<Object> getStatement(
+            @PathVariable Long accountId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<StatementResponse> statements = transactionService.getStatement(pageable);
+        Page<StatementResponse> statements = transactionService.getStatement(accountId, pageable);
 
         PageMeta meta = PageMeta.builder()
                 .currentPage(statements.getNumber())

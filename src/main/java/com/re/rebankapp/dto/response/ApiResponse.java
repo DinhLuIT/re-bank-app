@@ -50,6 +50,15 @@ public class ApiResponse<T> {
                 .build();
     }
 
+    // TRẢ VỀ THÀNH CÔNG KHI TẠO MỚI (HTTP 201 Created)
+    public static <T> ApiResponse<T> created(T data) {
+        return ApiResponse.<T>builder()
+                .code(ResponseCode.CREATED_SUCCESS.getCode())
+                .message(ResponseCode.CREATED_SUCCESS.getMessage())
+                .data(data)
+                .build();
+    }
+
     // TRẢ VỀ LỖI
     public static <T> ApiResponse<T> error(ResponseCode responseCode){
         return ApiResponse.<T>builder()

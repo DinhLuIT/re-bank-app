@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Unit Tests cho TransactionServiceImpl")
+@DisplayName("Unit Tests cho TransactionServiceImpl (Kiến trúc 1-N)")
 class TransactionServiceImplTest {
 
     @Mock
@@ -47,7 +47,7 @@ class TransactionServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        // Giả lập Security Context cho hàm getMyAccount()
+        // Giả lập Security Context cho hàm getOwnedAccount()
         UserDetailsImpl userDetails = UserDetailsImpl.builder()
                 .id(1L)
                 .username("testuser")
@@ -62,17 +62,20 @@ class TransactionServiceImplTest {
 
         // Chuẩn bị dữ liệu mẫu (Mock Data)
         sourceAccount = new Account();
+        sourceAccount.setId(10L);
         sourceAccount.setAccountNumber("0987654321");
         sourceAccount.setBalance(new BigDecimal("5000000"));
         sourceAccount.setTransactionPin("encoded_pin");
         sourceAccount.setActive(true);
 
         targetAccount = new Account();
+        targetAccount.setId(20L);
         targetAccount.setAccountNumber("9999999999");
         targetAccount.setBalance(new BigDecimal("1000000"));
         targetAccount.setActive(true);
 
         transferRequest = new TransferRequest();
+        transferRequest.setSourceAccountId(10L);
         transferRequest.setTargetAccountNumber("9999999999");
         transferRequest.setAmount(new BigDecimal("2000000"));
         transferRequest.setTransactionPin("123456");
@@ -80,12 +83,11 @@ class TransactionServiceImplTest {
     }
 
     @Test
-    @DisplayName("Chuyển tiền thành công")
+    @DisplayName("Chuyển tiền thành công (Kiến trúc 1-N)")
     void testTransfer_Success() {
-        // Arrange
-        when(accountRepository.findByUserId(1L)).thenReturn(Optional.of(sourceAccount));
+        // Arrange: Mock getOwnedAccount() bằng findByIdAndUserId
+        when(accountRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(sourceAccount));
         when(passwordEncoder.matches("123456", "encoded_pin")).thenReturn(true);
-        // Do string compareTo cho "0987654321" và "9999999999" -> "0987654321" nhỏ hơn
         when(accountRepository.findByAccountNumberForUpdate("0987654321")).thenReturn(Optional.of(sourceAccount));
         when(accountRepository.findByAccountNumberForUpdate("9999999999")).thenReturn(Optional.of(targetAccount));
 
@@ -99,14 +101,28 @@ class TransactionServiceImplTest {
     }
 
     @Test
+    @DisplayName("Chuyển tiền thất bại: Tài khoản không thuộc sở hữu (Chống IDOR)")
+    void testTransfer_AccountNotOwned() {
+        // Arrange: User đang cố gắng chuyển từ tài khoản không phải của mình
+        when(accountRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        AppException exception = assertThrows(AppException.class, () -> {
+            transactionService.transfer(transferRequest);
+        });
+        assertEquals(4407, exception.getResponseCode().getCode());
+        assertEquals("Tài khoản này không thuộc quyền sở hữu của bạn", exception.getResponseCode().getMessage());
+    }
+
+    @Test
     @DisplayName("Chuyển tiền thất bại: Không tìm thấy tài khoản nhận")
     void testTransfer_TargetAccountNotFound() {
         // Arrange
-        when(accountRepository.findByUserId(1L)).thenReturn(Optional.of(sourceAccount));
+        when(accountRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(sourceAccount));
         when(passwordEncoder.matches("123456", "encoded_pin")).thenReturn(true);
         
         when(accountRepository.findByAccountNumberForUpdate("0987654321")).thenReturn(Optional.of(sourceAccount));
-        when(accountRepository.findByAccountNumberForUpdate("9999999999")).thenReturn(Optional.empty()); // Lỗi ở đây
+        when(accountRepository.findByAccountNumberForUpdate("9999999999")).thenReturn(Optional.empty());
 
         // Act & Assert
         AppException exception = assertThrows(AppException.class, () -> {
@@ -120,8 +136,8 @@ class TransactionServiceImplTest {
     @DisplayName("Chuyển tiền thất bại: Sai mã PIN giao dịch")
     void testTransfer_InvalidPin() {
         // Arrange
-        when(accountRepository.findByUserId(1L)).thenReturn(Optional.of(sourceAccount));
-        when(passwordEncoder.matches("123456", "encoded_pin")).thenReturn(false); // Sai mã PIN
+        when(accountRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(sourceAccount));
+        when(passwordEncoder.matches("123456", "encoded_pin")).thenReturn(false);
 
         // Act & Assert
         AppException exception = assertThrows(AppException.class, () -> {
@@ -136,7 +152,7 @@ class TransactionServiceImplTest {
     void testTransfer_InsufficientBalance() {
         // Arrange
         transferRequest.setAmount(new BigDecimal("10000000")); // Chuyển 10 triệu (vượt quá 5 triệu)
-        when(accountRepository.findByUserId(1L)).thenReturn(Optional.of(sourceAccount));
+        when(accountRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(sourceAccount));
         when(passwordEncoder.matches("123456", "encoded_pin")).thenReturn(true);
         when(accountRepository.findByAccountNumberForUpdate("0987654321")).thenReturn(Optional.of(sourceAccount));
         when(accountRepository.findByAccountNumberForUpdate("9999999999")).thenReturn(Optional.of(targetAccount));
@@ -155,7 +171,7 @@ class TransactionServiceImplTest {
         // Arrange
         transferRequest.setTargetAccountNumber("0987654321"); // Chuyển cho chính mình
 
-        when(accountRepository.findByUserId(1L)).thenReturn(Optional.of(sourceAccount));
+        when(accountRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(sourceAccount));
 
         // Act & Assert
         AppException exception = assertThrows(AppException.class, () -> {

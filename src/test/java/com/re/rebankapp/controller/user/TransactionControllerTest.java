@@ -25,10 +25,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Unit Tests cho TransactionController")
+@DisplayName("Unit Tests cho TransactionController (Kiến trúc 1-N)")
 class TransactionControllerTest {
 
     @Mock
@@ -38,20 +39,21 @@ class TransactionControllerTest {
     private TransactionController transactionController;
 
     @Test
-    @DisplayName("Vấn tin số dư thành công")
+    @DisplayName("Vấn tin số dư thành công (truyền accountId)")
     void testGetBalance_Success() {
-        when(transactionService.getBalance()).thenReturn(new BigDecimal("5000000"));
+        when(transactionService.getBalance(10L)).thenReturn(new BigDecimal("5000000"));
 
-        ApiResponse<Map<String, BigDecimal>> response = transactionController.getBalance();
+        ApiResponse<Map<String, BigDecimal>> response = transactionController.getBalance(10L);
 
         assertEquals(1000, response.getCode());
         assertEquals(new BigDecimal("5000000"), response.getData().get("balance"));
     }
 
     @Test
-    @DisplayName("Chuyển tiền thành công")
+    @DisplayName("Chuyển tiền thành công (có sourceAccountId)")
     void testTransfer_Success() {
         TransferRequest request = TransferRequest.builder()
+                .sourceAccountId(10L)
                 .targetAccountNumber("9999999999")
                 .amount(new BigDecimal("2000000"))
                 .transactionPin("123456")
@@ -67,7 +69,7 @@ class TransactionControllerTest {
     }
 
     @Test
-    @DisplayName("Lấy sao kê giao dịch thành công (có dữ liệu)")
+    @DisplayName("Lấy sao kê giao dịch thành công (truyền accountId, có dữ liệu)")
     void testGetStatement_Success() {
         StatementResponse statementResponse = StatementResponse.builder()
                 .transactionCode("TXN123")
@@ -79,14 +81,13 @@ class TransactionControllerTest {
 
         Page<StatementResponse> page = new PageImpl<>(List.of(statementResponse), PageRequest.of(0, 10), 1);
 
-        when(transactionService.getStatement(any(Pageable.class))).thenReturn(page);
+        when(transactionService.getStatement(eq(10L), any(Pageable.class))).thenReturn(page);
 
-        ApiResponse<Object> response = transactionController.getStatement(0, 10);
+        ApiResponse<Object> response = transactionController.getStatement(10L, 0, 10);
 
         assertEquals(1000, response.getCode());
         assertNotNull(response.getData());
         
-        // Cần ép kiểu để test do kiểu trả về là Object
         List<StatementResponse> content = (List<StatementResponse>) response.getData();
         assertEquals(1, content.size());
         assertEquals("TXN123", content.get(0).getTransactionCode());
@@ -99,13 +100,13 @@ class TransactionControllerTest {
     }
     
     @Test
-    @DisplayName("Lấy sao kê giao dịch thành công (danh sách rỗng)")
+    @DisplayName("Lấy sao kê giao dịch thành công (truyền accountId, danh sách rỗng)")
     void testGetStatement_EmptyResult() {
         Page<StatementResponse> page = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
 
-        when(transactionService.getStatement(any(Pageable.class))).thenReturn(page);
+        when(transactionService.getStatement(eq(10L), any(Pageable.class))).thenReturn(page);
 
-        ApiResponse<Object> response = transactionController.getStatement(0, 10);
+        ApiResponse<Object> response = transactionController.getStatement(10L, 0, 10);
 
         assertEquals(1000, response.getCode());
         
@@ -116,9 +117,6 @@ class TransactionControllerTest {
     @Test
     @DisplayName("Chuyển tiền thất bại: Yêu cầu không hợp lệ (null)")
     void testTransfer_NullRequest_ThrowsException() {
-        // Mặc dù Controller thường được bảo vệ bởi @Valid, ta có thể test trực tiếp logic 
-        // gọi service với giá trị null nếu cần. Tuy nhiên ở đây service có thể quăng lỗi.
-        // Ta sẽ mock service quăng lỗi khi nhận request null.
         doThrow(new RuntimeException("Request cannot be null")).when(transactionService).transfer(null);
         
         try {

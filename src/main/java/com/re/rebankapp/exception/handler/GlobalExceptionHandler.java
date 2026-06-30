@@ -21,6 +21,8 @@ import java.util.Map;
 import org.springframework.validation.BindException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
@@ -126,6 +128,22 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(ResponseCode.FORBIDDEN.getHttpStatus()).body(response);
+    }
+
+    // BẮT LỖI SAI ĐƯỜNG DẪN API (404 Not Found)
+    @ExceptionHandler({
+            NoHandlerFoundException.class,
+            NoResourceFoundException.class
+    })
+    public ResponseEntity<ApiResponse<Void>> handleNotFoundException(Exception exception) {
+        log.warn("Không tìm thấy đường dẫn API: {}", exception.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code(ResponseCode.ENDPOINT_NOT_FOUND.getCode())
+                .message(ResponseCode.ENDPOINT_NOT_FOUND.getMessage())
+                .build();
+
+        return ResponseEntity.status(ResponseCode.ENDPOINT_NOT_FOUND.getHttpStatus()).body(response);
     }
 
     // BẮT LỖI HỆ THỐNG

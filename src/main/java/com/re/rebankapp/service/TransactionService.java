@@ -8,10 +8,9 @@ import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 
 public interface TransactionService {
-    
-    BigDecimal getBalance();
-    
+    BigDecimal getBalance(Long accountId);
+
     void transfer(TransferRequest request);
-    
-    Page<StatementResponse> getStatement(Pageable pageable);
+
+    Page<StatementResponse> getStatement(Long accountId, Pageable pageable);
 }

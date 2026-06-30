@@ -16,6 +16,9 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransferRequest {
+
+    @NotNull(message = "Mã tài khoản nguồn không được để trống")
+    private Long sourceAccountId;
     
     @NotBlank(message = "Số tài khoản nhận không được để trống")
     private String targetAccountNumber;

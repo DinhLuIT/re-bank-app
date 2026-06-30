@@ -22,6 +22,7 @@ public enum ResponseCode {
     BAD_REQUEST(4000, "Dữ liệu đầu vào không hợp lệ", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED(4001, "Chưa xác thực hoặc phiên đăng nhập hết hạn", HttpStatus.UNAUTHORIZED),
     FORBIDDEN(4003, "Bạn không có quyền thực hiện thao tác này", HttpStatus.FORBIDDEN),
+    ENDPOINT_NOT_FOUND(4004, "Đường dẫn API không tồn tại", HttpStatus.NOT_FOUND),
     METHOD_NOT_ALLOWED(4005, "Phương thức HTTP không được hỗ trợ", HttpStatus.METHOD_NOT_ALLOWED),
 
     // LỖI LIÊN QUAN ĐẾN BẢO MẬT & XÁC THỰC [AUTH/JWT] (41xx)
@@ -58,6 +59,8 @@ public enum ResponseCode {
     INVALID_TRANSACTION_AMOUNT(4404, "Số tiền giao dịch không hợp lệ (phải lớn hơn 0)", HttpStatus.BAD_REQUEST),
     SAME_ACCOUNT_TRANSFER(4405, "Không thể tự chuyển tiền cho chính mình", HttpStatus.BAD_REQUEST),
     DAILY_LIMIT_EXCEEDED(4406, "Giao dịch vượt quá hạn mức chuyển tiền trong ngày", HttpStatus.BAD_REQUEST),
+    ACCOUNT_NOT_OWNED(4407, "Tài khoản này không thuộc quyền sở hữu của bạn", HttpStatus.FORBIDDEN),
+    MAX_ACCOUNTS_REACHED(4408, "Bạn đã đạt giới hạn tối đa số lượng tài khoản được phép mở", HttpStatus.BAD_REQUEST),
 
     // -----------------------------------------------------------------------------------------
 
