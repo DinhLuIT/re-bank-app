@@ -17,6 +17,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.validation.BindException;
 import org.springframework.security.access.AccessDeniedException;
@@ -149,9 +150,13 @@ public class GlobalExceptionHandler {
     // BẮT LỖI HỆ THỐNG
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception exception) {
-        log.error("Lỗi hệ thống nội bộ: ", exception);
+        String traceId = UUID.randomUUID().toString();
+        log.error("Lỗi hệ thống nội bộ [TraceID: {}]: ", traceId, exception);
 
-        ApiResponse<Void> response = ApiResponse.error(ResponseCode.INTERNAL_SERVER_ERROR);
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .code(ResponseCode.INTERNAL_SERVER_ERROR.getCode())
+                .message(ResponseCode.INTERNAL_SERVER_ERROR.getMessage() + " (TraceID: " + traceId + ")")
+                .build();
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }

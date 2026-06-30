@@ -1,4 +1,4 @@
-package com.re.rebankapp.controller.admin;
+package com.re.rebankapp.controller.backoffice;
 
 import com.re.rebankapp.dto.response.ApiResponse;
 import com.re.rebankapp.dto.response.PageMeta;
@@ -17,9 +17,9 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/admin/users")
+@RequestMapping("/api/v1/backoffice/users")
 @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
-public class AdminUserController {
+public class BackofficeUserController {
 
     private final UserService userService;
 

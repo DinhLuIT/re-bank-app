@@ -17,6 +17,7 @@ import com.re.rebankapp.security.UserDetailsImpl;
 import com.re.rebankapp.service.AuthService;
 import com.re.rebankapp.service.RefreshTokenService;
 import com.re.rebankapp.service.TokenBlacklistService;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -120,18 +121,26 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(String accessToken) {
-        if (!tokenBlacklistService.isTokenBlacklisted(accessToken)) {
-            Date expirationDate = jwtUtils.getExpirationDateFromJwtToken(accessToken);
-            long expireTimeInSeconds = (expirationDate.getTime() - System.currentTimeMillis()) / 1000;
+        try {
+            if (!tokenBlacklistService.isTokenBlacklisted(accessToken)) {
+                Date expirationDate = jwtUtils.getExpirationDateFromJwtToken(accessToken);
+                long expireTimeInSeconds = (expirationDate.getTime() - System.currentTimeMillis()) / 1000;
 
-            tokenBlacklistService.blacklistToken(accessToken, expireTimeInSeconds);
+                tokenBlacklistService.blacklistToken(accessToken, expireTimeInSeconds);
 
-            String username = jwtUtils.getUserNameFromJwtToken(accessToken);
+                String username = jwtUtils.getUserNameFromJwtToken(accessToken);
 
-            userRepository.findByUsername(username).ifPresent(user -> {
-                refreshTokenService.deleteByUserId(user.getId());
-                log.info("Đã xóa Refresh Token của user {}", username);
-            });
+                userRepository.findByUsername(username).ifPresent(user -> {
+                    refreshTokenService.deleteByUserId(user.getId());
+                    log.info("Đã xóa Refresh Token của user {}", username);
+                });
+            }
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Đăng xuất với token không hợp lệ hoặc đã hết hạn: {}", e.getMessage());
+            // Token đã không hợp lệ thì không cần làm gì thêm, coi như đã đăng xuất
+        } catch (Exception e) {
+            log.error("Lỗi khi đăng xuất: ", e);
+            throw new AppException(ResponseCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

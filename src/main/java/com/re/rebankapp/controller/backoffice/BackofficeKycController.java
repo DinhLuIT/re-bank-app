@@ -1,4 +1,4 @@
-package com.re.rebankapp.controller.admin;
+package com.re.rebankapp.controller.backoffice;
 
 import com.re.rebankapp.dto.response.ApiResponse;
 import com.re.rebankapp.dto.response.KycAdminResponse;
@@ -24,9 +24,9 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/admin/kyc")
+@RequestMapping("/api/v1/backoffice/kyc")
 @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
-public class AdminKycController {
+public class BackofficeKycController {
 
     private final KycService kycService;
 
