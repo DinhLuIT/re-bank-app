@@ -1,11 +1,11 @@
-package com.re.rebankapp.controller;
+package com.re.rebankapp.controller.auth;
 
-import com.re.rebankapp.controller.auth.AuthController;
 import com.re.rebankapp.dto.request.LoginRequest;
 import com.re.rebankapp.dto.response.ApiResponse;
 import com.re.rebankapp.dto.response.AuthResponse;
 import com.re.rebankapp.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Unit Tests cho AuthController")
 public class AuthControllerTest {
 
     @Mock
@@ -41,6 +42,7 @@ public class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("Đăng nhập thành công")
     void testLogin_Success() {
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setUsername("admin");
@@ -65,6 +67,7 @@ public class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("Đăng ký thất bại: Mật khẩu không đúng định dạng")
     void testRegister_InvalidPasswordFormat() throws Exception {
         // Mật khẩu thiếu ký tự đặc biệt, thiếu số, quá ngắn -> Vi phạm @StrongPassword
         String invalidRequestJson = """

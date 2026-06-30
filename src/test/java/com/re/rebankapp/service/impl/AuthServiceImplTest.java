@@ -14,6 +14,7 @@ import com.re.rebankapp.repository.UserRepository;
 import com.re.rebankapp.security.JwtUtils;
 import com.re.rebankapp.service.RefreshTokenService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +36,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Unit Tests cho AuthServiceImpl")
 public class AuthServiceImplTest {
 
     @Mock
@@ -67,6 +69,7 @@ public class AuthServiceImplTest {
     }
 
     @Test
+    @DisplayName("Đăng nhập thành công")
     void testLogin_Success() {
         // Given
         LoginRequest request = new LoginRequest();
@@ -105,6 +108,7 @@ public class AuthServiceImplTest {
     }
 
     @Test
+    @DisplayName("Đăng nhập thất bại: Sai thông tin đăng nhập")
     void testLogin_Failure_BadCredentials() {
         // Given
         LoginRequest request = new LoginRequest();
@@ -123,6 +127,7 @@ public class AuthServiceImplTest {
     }
 
     @Test
+    @DisplayName("Đăng ký thất bại: Tên đăng nhập đã tồn tại")
     void testRegister_DuplicateUsername() {
         // Given
         RegisterRequest request = new RegisterRequest();
@@ -140,6 +145,7 @@ public class AuthServiceImplTest {
     }
 
     @Test
+    @DisplayName("Làm mới Token thất bại: Refresh Token không tồn tại (đã đăng xuất)")
     void testRefreshToken_NotFound_AfterLogout() {
         // Given
         RefreshTokenRequest request = new RefreshTokenRequest();
