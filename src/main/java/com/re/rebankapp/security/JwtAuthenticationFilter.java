@@ -1,6 +1,6 @@
 package com.re.rebankapp.security;
 
-import com.re.rebankapp.repository.TokenBlackListRepository;
+import com.re.rebankapp.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
-    private final TokenBlackListRepository tokenBlackListRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -33,7 +33,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = parseJwt(request);
 
-            if (jwt != null && jwtUtils.validateJwtToken(jwt) && !tokenBlackListRepository.existsByAccessToken(jwt)) {
+            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
+
+                if (tokenBlacklistService.isTokenBlacklisted(jwt)) {
+                    logger.error("Token đã bị vô hiệu hóa (Blacklist)");
+
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token đã bị vô hiệu hóa (Đăng xuất)");
+                    return;
+                }
+
                 String username = jwtUtils.getUserNameFromJwtToken(jwt);
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);

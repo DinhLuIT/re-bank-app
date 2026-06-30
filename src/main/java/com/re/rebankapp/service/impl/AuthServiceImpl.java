@@ -6,18 +6,17 @@ import com.re.rebankapp.dto.request.RegisterRequest;
 import com.re.rebankapp.dto.response.AuthResponse;
 import com.re.rebankapp.entity.RefreshToken;
 import com.re.rebankapp.entity.Role;
-import com.re.rebankapp.entity.TokenBlacklist;
 import com.re.rebankapp.entity.User;
 import com.re.rebankapp.enums.RoleName;
 import com.re.rebankapp.exception.AppException;
 import com.re.rebankapp.exception.ResponseCode;
 import com.re.rebankapp.repository.RoleRepository;
-import com.re.rebankapp.repository.TokenBlackListRepository;
 import com.re.rebankapp.repository.UserRepository;
 import com.re.rebankapp.security.JwtUtils;
 import com.re.rebankapp.security.UserDetailsImpl;
 import com.re.rebankapp.service.AuthService;
 import com.re.rebankapp.service.RefreshTokenService;
+import com.re.rebankapp.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,10 +26,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 
 @Slf4j
@@ -42,9 +38,9 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final TokenBlackListRepository tokenBlackListRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     public AuthResponse login(LoginRequest loginRequest) {
@@ -123,29 +119,19 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void logout(String accessToken){
-        if (!tokenBlackListRepository.existsByAccessToken(accessToken)) {
+    public void logout(String accessToken) {
+        if (!tokenBlacklistService.isTokenBlacklisted(accessToken)) {
             Date expirationDate = jwtUtils.getExpirationDateFromJwtToken(accessToken);
-            LocalDateTime expiryAt = expirationDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            long expireTimeInSeconds = (expirationDate.getTime() - System.currentTimeMillis()) / 1000;
 
-            // đưa access token vào blacklist
-            TokenBlacklist blacklist = TokenBlacklist.builder()
-                    .accessToken(accessToken)
-                    .blacklistedAt(LocalDateTime.now())
-                    .expiryAt(expiryAt)
-                    .build();
+            tokenBlacklistService.blacklistToken(accessToken, expireTimeInSeconds);
 
-            tokenBlackListRepository.save(blacklist);
-            
-            // tìm username từ token và xóa Refresh Token tương ứng
             String username = jwtUtils.getUserNameFromJwtToken(accessToken);
 
             userRepository.findByUsername(username).ifPresent(user -> {
                 refreshTokenService.deleteByUserId(user.getId());
                 log.info("Đã xóa Refresh Token của user {}", username);
             });
-            
-            log.info("Đã đưa token vào Sổ đen (đăng xuất)");
         }
     }
 }
