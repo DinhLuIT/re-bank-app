@@ -45,3 +45,6 @@ out/
 ### LOGS ###
 logs/
 *.log
+
+### REDIS ###
+redis_data/
