@@ -43,4 +43,10 @@ public class Transaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_account_id")
     private Account toAccount;
+
+    @Column(name = "external_account_number", length = 50)
+    private String externalAccountNumber;
+
+    @Column(name = "external_bank_name", length = 100)
+    private String externalBankName;
 }

@@ -1,5 +1,6 @@
 package com.re.rebankapp.controller.user;
 
+import com.re.rebankapp.dto.request.InterbankTransferRequest;
 import com.re.rebankapp.dto.request.TransferRequest;
 import com.re.rebankapp.dto.response.ApiResponse;
 import com.re.rebankapp.dto.response.PageMeta;
@@ -40,6 +41,15 @@ public class TransactionController {
     @PostMapping("/transactions/transfer")
     public ApiResponse<Void> transfer(@Valid @RequestBody TransferRequest request) {
         transactionService.transfer(request);
+        return ApiResponse.success();
+    }
+
+    /**
+     * Chuyển tiền Liên Ngân hàng - Giả lập qua Napas
+     */
+    @PostMapping("/transactions/inter-bank")
+    public ApiResponse<Void> interbankTransfer(@Valid @RequestBody InterbankTransferRequest request) {
+        transactionService.interbankTransfer(request);
         return ApiResponse.success();
     }
 

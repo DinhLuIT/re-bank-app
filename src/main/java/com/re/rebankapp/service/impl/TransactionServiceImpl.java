@@ -1,6 +1,7 @@
 package com.re.rebankapp.service.impl;
 
 import com.re.rebankapp.dto.request.AtmTransactionRequest;
+import com.re.rebankapp.dto.request.InterbankTransferRequest;
 import com.re.rebankapp.dto.request.TransferRequest;
 import com.re.rebankapp.dto.response.StatementResponse;
 import com.re.rebankapp.entity.Account;
@@ -11,6 +12,7 @@ import com.re.rebankapp.exception.ResponseCode;
 import com.re.rebankapp.repository.AccountRepository;
 import com.re.rebankapp.repository.TransactionRepository;
 import com.re.rebankapp.security.UserDetailsImpl;
+import com.re.rebankapp.service.InterbankService;
 import com.re.rebankapp.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,6 +32,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final InterbankService interbankService;
 
     @Override
     public BigDecimal getBalance(Long accountId) {
@@ -180,6 +183,63 @@ public class TransactionServiceImpl implements TransactionService {
         });
 
         return statements;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void interbankTransfer(InterbankTransferRequest request) {
+        // 1. Lock tài khoản người gửi
+        Account lockedSender = accountRepository.findByAccountNumberAndUserIdForUpdate(
+                accountRepository.findById(request.getSourceAccountId())
+                        .orElseThrow(() -> new AppException(ResponseCode.BANK_ACCOUNT_NOT_FOUND))
+                        .getAccountNumber(), 
+                getCurrentUserId()
+        ).orElseThrow(() -> new AppException(ResponseCode.ACCOUNT_NOT_OWNED));
+
+        // 2. Xác thực mã PIN
+        if (!passwordEncoder.matches(request.getTransactionPin(), lockedSender.getTransactionPin())) {
+            throw new AppException(ResponseCode.INVALID_OLD_PIN);
+        }
+
+        // 3. Kiểm tra số dư và hạn mức
+        if (lockedSender.getBalance().compareTo(request.getAmount()) < 0) {
+            throw new AppException(ResponseCode.INSUFFICIENT_BALANCE);
+        }
+
+        BigDecimal dailySpent = transactionRepository.sumDailyOutflow(lockedSender.getId());
+        if (dailySpent.add(request.getAmount()).compareTo(lockedSender.getDailyLimit()) > 0) {
+            throw new AppException(ResponseCode.DAILY_LIMIT_EXCEEDED);
+        }
+
+        // 4. Gọi dịch vụ Napas
+        boolean isSuccess = interbankService.transferToExternalBank(
+                lockedSender.getAccountNumber(),
+                request.getTargetAccountNumber(),
+                request.getBankName(),
+                request.getAmount()
+        );
+
+        if (!isSuccess) {
+            throw new AppException(ResponseCode.BAD_REQUEST); // Tạm dùng BAD_REQUEST hoặc mã lỗi tùy chỉnh
+        }
+
+        // 5. Trừ tiền và lưu giao dịch
+        lockedSender.setBalance(lockedSender.getBalance().subtract(request.getAmount()));
+        accountRepository.save(lockedSender);
+
+        String txnCode = "IBFT" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        Transaction transaction = Transaction.builder()
+                .transactionCode(txnCode)
+                .amount(request.getAmount())
+                .description(request.getDescription())
+                .status("SUCCESS")
+                .fromAccount(lockedSender)
+                .toAccount(null)
+                .externalAccountNumber(request.getTargetAccountNumber())
+                .externalBankName(request.getBankName())
+                .build();
+
+        transactionRepository.save(transaction);
     }
 
     /**
