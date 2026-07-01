@@ -3,7 +3,10 @@ package com.re.rebankapp.service.impl;
 import com.re.rebankapp.dto.request.LoginRequest;
 import com.re.rebankapp.dto.request.RefreshTokenRequest;
 import com.re.rebankapp.dto.request.RegisterRequest;
+import com.re.rebankapp.dto.request.VerifyOtpRequest;
+import com.re.rebankapp.dto.request.ResetPasswordRequest;
 import com.re.rebankapp.dto.response.AuthResponse;
+import com.re.rebankapp.dto.response.ResetTokenResponse;
 import com.re.rebankapp.entity.RefreshToken;
 import com.re.rebankapp.entity.Role;
 import com.re.rebankapp.entity.User;
@@ -15,6 +18,7 @@ import com.re.rebankapp.repository.UserRepository;
 import com.re.rebankapp.security.JwtUtils;
 import com.re.rebankapp.security.UserDetailsImpl;
 import com.re.rebankapp.service.AuthService;
+import com.re.rebankapp.service.MailService;
 import com.re.rebankapp.service.RefreshTokenService;
 import com.re.rebankapp.service.TokenBlacklistService;
 import io.jsonwebtoken.JwtException;
@@ -27,8 +31,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.security.SecureRandom;
 import java.util.Date;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -42,6 +50,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final MailService mailService;
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Override
     public AuthResponse login(LoginRequest loginRequest) {
@@ -142,5 +152,79 @@ public class AuthServiceImpl implements AuthService {
             log.error("Lỗi khi đăng xuất: ", e);
             throw new AppException(ResponseCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Override
+    public void forgotPassword(String email) {
+        // Kiểm tra xem email có tồn tại không
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ResponseCode.USER_NOT_FOUND));
+
+        // Sinh mã OTP ngẫu nhiên 6 chữ số
+        String otp = String.format("%06d", new SecureRandom().nextInt(1000000));
+        
+        // Lưu OTP vào Redis với TTL là 5 phút
+        stringRedisTemplate.opsForValue().set(
+                "FORGOT_OTP_" + email,
+                otp,
+                5,
+                TimeUnit.MINUTES
+        );
+
+        // Gọi MailService gửi thư
+        mailService.sendOtpEmail(email, otp);
+    }
+
+    @Override
+    public ResetTokenResponse verifyOtp(VerifyOtpRequest request) {
+        String email = request.getEmail();
+        String savedOtp = stringRedisTemplate.opsForValue().get("FORGOT_OTP_" + email);
+        
+        if (savedOtp == null || !savedOtp.equals(request.getOtp())) {
+            throw new AppException(ResponseCode.INVALID_OTP);
+        }
+
+        // OTP đúng -> Sinh mã resetToken
+        String resetToken = UUID.randomUUID().toString();
+        
+        // Lưu token vào Redis với TTL là 15 phút
+        stringRedisTemplate.opsForValue().set(
+                "RESET_TOKEN_" + email,
+                resetToken,
+                15,
+                TimeUnit.MINUTES
+        );
+        
+        // Xóa OTP cũ để tránh dùng lại (One-Time Password)
+        stringRedisTemplate.delete("FORGOT_OTP_" + email);
+
+        return ResetTokenResponse.builder().resetToken(resetToken).build();
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        // Kiểm tra mật khẩu xác nhận
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new AppException(ResponseCode.PASSWORD_CONFIRM_MISMATCH);
+        }
+
+        String email = request.getEmail();
+        String savedToken = stringRedisTemplate.opsForValue().get("RESET_TOKEN_" + email);
+        
+        if (savedToken == null || !savedToken.equals(request.getResetToken())) {
+            throw new AppException(ResponseCode.INVALID_RESET_TOKEN);
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ResponseCode.USER_NOT_FOUND));
+        
+        // Cập nhật mật khẩu mới
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Xóa token khỏi Redis
+        stringRedisTemplate.delete("RESET_TOKEN_" + email);
+        
+        log.info("Người dùng {} đã đặt lại mật khẩu đăng nhập thành công", email);
     }
 }

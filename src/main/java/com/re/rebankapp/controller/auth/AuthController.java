@@ -3,7 +3,12 @@ package com.re.rebankapp.controller.auth;
 import com.re.rebankapp.dto.request.LoginRequest;
 import com.re.rebankapp.dto.request.RefreshTokenRequest;
 import com.re.rebankapp.dto.request.RegisterRequest;
+import com.re.rebankapp.dto.request.ForgotPasswordRequest;
+import com.re.rebankapp.dto.request.VerifyOtpRequest;
+import com.re.rebankapp.dto.request.ResetPasswordRequest;
 import com.re.rebankapp.dto.response.ApiResponse;
+import com.re.rebankapp.dto.response.AuthResponse;
+import com.re.rebankapp.dto.response.ResetTokenResponse;
 import com.re.rebankapp.dto.response.AuthResponse;
 import com.re.rebankapp.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,5 +59,23 @@ public class AuthController {
         }
         
         throw new AppException(ResponseCode.UNAUTHORIZED);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("Mã OTP đã được gửi đến email của bạn"));
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<ResetTokenResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        ResetTokenResponse response = authService.verifyOtp(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại"));
     }
 }

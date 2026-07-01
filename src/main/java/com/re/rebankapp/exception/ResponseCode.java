@@ -31,6 +31,10 @@ public enum ResponseCode {
     TOKEN_INVALID(4103, "Token không hợp lệ hoặc đã bị can thiệp", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED(4104, "Token đã hết hạn, vui lòng refresh token", HttpStatus.UNAUTHORIZED),
     REFRESH_TOKEN_NOT_FOUND(4105, "Refresh token không tồn tại hoặc đã bị thu hồi", HttpStatus.NOT_FOUND),
+    TOKEN_BLACKLISTED(4106, "Token đã bị vô hiệu hóa", HttpStatus.UNAUTHORIZED),
+    INVALID_OTP(4107, "Mã OTP không hợp lệ hoặc đã hết hạn", HttpStatus.BAD_REQUEST),
+    INVALID_RESET_TOKEN(4108, "Mã khôi phục mật khẩu không hợp lệ hoặc đã hết hạn", HttpStatus.BAD_REQUEST),
+    PASSWORD_CONFIRM_MISMATCH(4109, "Mật khẩu mới và xác nhận mật khẩu không khớp", HttpStatus.BAD_REQUEST),
 
     // LỖI NGƯỜI DÙNG & QUYỀN [USER & ROLE] (42xx)
     USER_NOT_FOUND(4201, "Không tìm thấy thông tin người dùng", HttpStatus.NOT_FOUND),

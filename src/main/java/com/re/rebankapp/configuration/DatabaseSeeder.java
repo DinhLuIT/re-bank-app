@@ -87,7 +87,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             User testUser = new User();
             testUser.setUsername("testuser");
             testUser.setPassword(passwordEncoder.encode("Abcd@1234"));
-            testUser.setEmail("testuser@rebank.com");
+            testUser.setEmail("dulinh2482@gmail.com");
             testUser.setPhoneNumber("0987654321");
             testUser.setIsActive(true);
             testUser.setIsKyc(true);

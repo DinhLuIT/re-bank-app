@@ -19,6 +19,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = {"role"})
     Optional<User> findByUsername(String username);
 
+    Optional<User> findByEmail(String email);
+
     @Query("SELECT new com.re.rebankapp.dto.response.UserResponseDto(" +
             "u.id, u.username, u.email, u.phoneNumber, u.isActive, u.isKyc, r.name, u.createdAt) " +
             "FROM User u JOIN u.role r " +
