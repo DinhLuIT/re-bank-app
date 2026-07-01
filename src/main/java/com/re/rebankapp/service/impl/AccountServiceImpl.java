@@ -64,7 +64,10 @@ public class AccountServiceImpl implements AccountService {
 
         // Mã hóa và đồng bộ mã PIN mới cho TẤT CẢ tài khoản của User
         String encodedNewPin = passwordEncoder.encode(request.getNewPin());
-        accounts.forEach(acc -> acc.setTransactionPin(encodedNewPin));
+        accounts.forEach(acc -> {
+            acc.setTransactionPin(encodedNewPin);
+            acc.setIsPinChanged(true);
+        });
         accountRepository.saveAll(accounts);
 
         log.info("Đổi mã PIN thành công cho User có tài khoản [{}] (Đồng bộ {} tài khoản)", account.getAccountNumber(), accounts.size());
@@ -91,7 +94,10 @@ public class AccountServiceImpl implements AccountService {
 
         // Mã hóa và đồng bộ mã PIN mới cho TẤT CẢ tài khoản của User
         String encodedNewPin = passwordEncoder.encode(request.getNewPin());
-        accounts.forEach(acc -> acc.setTransactionPin(encodedNewPin));
+        accounts.forEach(acc -> {
+            acc.setTransactionPin(encodedNewPin);
+            acc.setIsPinChanged(true);
+        });
         accountRepository.saveAll(accounts);
 
         log.info("Đặt lại mã PIN thành công (Quên mã PIN) cho User [{}] (Đồng bộ {} tài khoản)", user.getUsername(), accounts.size());
@@ -127,8 +133,16 @@ public class AccountServiceImpl implements AccountService {
         // Lấy mã PIN từ tài khoản chính (thẻ đầu tiên) để đồng bộ cho thẻ mới
         List<Account> existingAccounts = accountRepository.findAllByUserId(userId);
         String transactionPin;
+        Boolean isPinChanged = false;
+        
         if (!existingAccounts.isEmpty()) {
+            // Phải đổi mã pin mặc định thì mới được tạo tài khoản mới
+            if (!existingAccounts.get(0).getIsPinChanged()) {
+                throw new AppException(ResponseCode.DEFAULT_PIN_NOT_ALLOWED);
+            }
+            
             transactionPin = existingAccounts.get(0).getTransactionPin();
+            isPinChanged = existingAccounts.get(0).getIsPinChanged();
         } else {
             transactionPin = passwordEncoder.encode(DEFAULT_TRANSACTION_PIN);
         }
@@ -138,6 +152,7 @@ public class AccountServiceImpl implements AccountService {
                 .balance(BigDecimal.ZERO)
                 .currency(DEFAULT_CURRENCY)
                 .transactionPin(transactionPin)
+                .isPinChanged(isPinChanged)
                 .user(user)
                 .build();
 
@@ -148,11 +163,23 @@ public class AccountServiceImpl implements AccountService {
     }
 
     /**
-     * Kiểm tra mã PIN mới và xác nhận mã PIN có khớp nhau không.
+     * Kiểm tra mã PIN mới có khớp nhau không và mã PIN mạnh
      */
     private void validateNewPin(String newPin, String confirmNewPin) {
         if (!newPin.equals(confirmNewPin)) {
             throw new AppException(ResponseCode.PIN_CONFIRM_MISMATCH);
+        }
+
+        if (newPin.matches("^(.)\\1*$")) {
+            throw new AppException(ResponseCode.NEW_PIN_CANNOT_BE_DEFAULT);
+        }
+
+        if ("0123456789".contains(newPin)) {
+            throw new AppException(ResponseCode.NEW_PIN_CANNOT_BE_DEFAULT);
+        }
+
+        if ("9876543210".contains(newPin)) {
+            throw new AppException(ResponseCode.NEW_PIN_CANNOT_BE_DEFAULT);
         }
     }
 

@@ -51,9 +51,13 @@ public class TransactionServiceImpl implements TransactionService {
             throw new AppException(ResponseCode.SAME_ACCOUNT_TRANSFER);
         }
 
-        // 3. Xác thực mã PIN giao dịch
+        // 3. Kiểm tra mã PIN (Phải nhập đúng PIN và ĐÃ đổi PIN lần đầu)
         if (!passwordEncoder.matches(request.getTransactionPin(), myAccount.getTransactionPin())) {
             throw new AppException(ResponseCode.INVALID_OLD_PIN);
+        }
+
+        if (!myAccount.getIsPinChanged()) {
+            throw new AppException(ResponseCode.DEFAULT_PIN_NOT_ALLOWED);
         }
 
         // 4. Cơ chế Pessimistic Locking để chống Race Condition (Double-spending)
@@ -112,11 +116,15 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void atmDeposit(AtmTransactionRequest request) {
-        Account account = accountRepository.findByAccountNumberAndUserIdForUpdate(request.getAccountNumber(), getCurrentUserId())
-                .orElseThrow(() -> new AppException(ResponseCode.BANK_ACCOUNT_NOT_FOUND));
+        Account account = getOwnedAccountForUpdate(request.getAccountNumber());
 
+        // Kiểm tra mã PIN (Phải nhập đúng PIN và ĐÃ đổi PIN lần đầu)
         if (!passwordEncoder.matches(request.getTransactionPin(), account.getTransactionPin())) {
             throw new AppException(ResponseCode.INVALID_OLD_PIN);
+        }
+
+        if (!account.getIsPinChanged()) {
+            throw new AppException(ResponseCode.DEFAULT_PIN_NOT_ALLOWED);
         }
 
         account.setBalance(account.getBalance().add(request.getAmount()));
@@ -137,11 +145,15 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void atmWithdraw(AtmTransactionRequest request) {
-        Account account = accountRepository.findByAccountNumberAndUserIdForUpdate(request.getAccountNumber(), getCurrentUserId())
-                .orElseThrow(() -> new AppException(ResponseCode.BANK_ACCOUNT_NOT_FOUND));
+        Account account = getOwnedAccountForUpdate(request.getAccountNumber());
 
+        // Kiểm tra mã PIN (Phải nhập đúng PIN và ĐÃ đổi PIN lần đầu)
         if (!passwordEncoder.matches(request.getTransactionPin(), account.getTransactionPin())) {
             throw new AppException(ResponseCode.INVALID_OLD_PIN);
+        }
+
+        if (!account.getIsPinChanged()) {
+            throw new AppException(ResponseCode.DEFAULT_PIN_NOT_ALLOWED);
         }
 
         if (account.getBalance().compareTo(request.getAmount()) < 0) {
@@ -189,16 +201,18 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional(rollbackFor = Exception.class)
     public void interbankTransfer(InterbankTransferRequest request) {
         // 1. Lock tài khoản người gửi
-        Account lockedSender = accountRepository.findByAccountNumberAndUserIdForUpdate(
-                accountRepository.findById(request.getSourceAccountId())
-                        .orElseThrow(() -> new AppException(ResponseCode.BANK_ACCOUNT_NOT_FOUND))
-                        .getAccountNumber(), 
-                getCurrentUserId()
-        ).orElseThrow(() -> new AppException(ResponseCode.ACCOUNT_NOT_OWNED));
+        String senderAccNo = accountRepository.findById(request.getSourceAccountId())
+                .orElseThrow(() -> new AppException(ResponseCode.BANK_ACCOUNT_NOT_FOUND))
+                .getAccountNumber();
+        Account lockedSender = getOwnedAccountForUpdate(senderAccNo);
 
-        // 2. Xác thực mã PIN
+        // 2. Kiểm tra mã PIN (Phải nhập đúng PIN và ĐÃ đổi PIN lần đầu)
         if (!passwordEncoder.matches(request.getTransactionPin(), lockedSender.getTransactionPin())) {
             throw new AppException(ResponseCode.INVALID_OLD_PIN);
+        }
+
+        if (!lockedSender.getIsPinChanged()) {
+            throw new AppException(ResponseCode.DEFAULT_PIN_NOT_ALLOWED);
         }
 
         // 3. Kiểm tra số dư và hạn mức
@@ -220,7 +234,7 @@ public class TransactionServiceImpl implements TransactionService {
         );
 
         if (!isSuccess) {
-            throw new AppException(ResponseCode.BAD_REQUEST); // Tạm dùng BAD_REQUEST hoặc mã lỗi tùy chỉnh
+            throw new AppException(ResponseCode.BAD_REQUEST);
         }
 
         // 5. Trừ tiền và lưu giao dịch
@@ -248,6 +262,14 @@ public class TransactionServiceImpl implements TransactionService {
      */
     private Account getOwnedAccount(Long accountId) {
         return accountRepository.findByIdAndUserId(accountId, getCurrentUserId())
+                .orElseThrow(() -> new AppException(ResponseCode.ACCOUNT_NOT_OWNED));
+    }
+
+    /**
+     * Đảm bảo tài khoản này thuộc về User đang đăng nhập.
+     */
+    private Account getOwnedAccountForUpdate(String accountNumber) {
+        return accountRepository.findByAccountNumberAndUserIdForUpdate(accountNumber, getCurrentUserId())
                 .orElseThrow(() -> new AppException(ResponseCode.ACCOUNT_NOT_OWNED));
     }
 

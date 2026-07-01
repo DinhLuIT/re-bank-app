@@ -39,6 +39,10 @@ public class Account {
     @Builder.Default
     private Boolean active = true;
 
+    @Column(name = "is_pin_changed", nullable = false)
+    @Builder.Default
+    private Boolean isPinChanged = false;
+
     @Column(nullable = false, precision = 19, scale = 4)
     @Builder.Default
     private BigDecimal dailyLimit = new BigDecimal("50000000");

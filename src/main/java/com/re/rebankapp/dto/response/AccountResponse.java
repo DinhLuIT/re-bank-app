@@ -20,5 +20,6 @@ public class AccountResponse {
     private BigDecimal dailyLimit;
     private String currency;
     private Boolean active;
+    private Boolean isPinChanged;
     private LocalDateTime createdAt;
 }

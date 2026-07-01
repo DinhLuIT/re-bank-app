@@ -52,6 +52,8 @@ public enum ResponseCode {
     PIN_CONFIRM_MISMATCH(4502, "Mã PIN mới và xác nhận mã PIN không khớp", HttpStatus.BAD_REQUEST),
     INVALID_PASSWORD_FOR_PIN_RESET(4503, "Mật khẩu đăng nhập không chính xác, không thể đặt lại mã PIN", HttpStatus.BAD_REQUEST),
     NEW_PIN_SAME_AS_OLD(4504, "Mã PIN mới không được trùng với mã PIN hiện tại", HttpStatus.BAD_REQUEST),
+    DEFAULT_PIN_NOT_ALLOWED(4505, "Vui lòng đổi mã PIN mặc định trước khi thực hiện giao dịch", HttpStatus.FORBIDDEN),
+    NEW_PIN_CANNOT_BE_DEFAULT(4506, "Mã PIN mới không được là chuỗi quá đơn giản (VD: 000000, 123456...)", HttpStatus.BAD_REQUEST),
 
     // LỖI TÀI KHOẢN NGÂN HÀNG & GIAO DỊCH [CORE BANKING] (44xx)
     BANK_ACCOUNT_NOT_FOUND(4401, "Không tìm thấy tài khoản ngân hàng", HttpStatus.NOT_FOUND),
