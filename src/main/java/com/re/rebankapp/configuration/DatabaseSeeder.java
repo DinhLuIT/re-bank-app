@@ -80,7 +80,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
 
         // Khởi tạo tài khoản Customer mẫu có sẵn tiền để test
-        if (userRepository.findByUsername("dinhlu").isEmpty()) {
+        if (userRepository.findByUsername("testuser").isEmpty()) {
             Role customerRole = roleRepository.findByName(RoleName.CUSTOMER)
                     .orElseThrow(() -> new RuntimeException("Role CUSTOMER không tồn tại"));
 
