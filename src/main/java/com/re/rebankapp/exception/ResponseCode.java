@@ -38,6 +38,7 @@ public enum ResponseCode {
     EMAIL_ALREADY_EXISTS(4203, "Địa chỉ email đã được đăng ký", HttpStatus.CONFLICT),
     ROLE_NOT_FOUND(4204, "Không tìm thấy quyền truy cập tương ứng", HttpStatus.NOT_FOUND),
     USER_NOT_ACTIVE(4205, "Tài khoản chưa được kích hoạt", HttpStatus.FORBIDDEN),
+    DATA_ALREADY_EXISTS(4206, "Dữ liệu đã tồn tại trên hệ thống (Email hoặc Số điện thoại bị trùng)", HttpStatus.CONFLICT),
 
     // LỖI ĐỊNH DANH [eKYC] (43xx)
     KYC_NOT_FOUND(4301, "Người dùng chưa có hồ sơ định danh", HttpStatus.NOT_FOUND),

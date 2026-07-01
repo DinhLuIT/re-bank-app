@@ -1,5 +1,6 @@
 package com.re.rebankapp.service.impl;
 
+import com.re.rebankapp.dto.request.AtmTransactionRequest;
 import com.re.rebankapp.dto.request.TransferRequest;
 import com.re.rebankapp.dto.response.StatementResponse;
 import com.re.rebankapp.entity.Account;
@@ -77,14 +78,21 @@ public class TransactionServiceImpl implements TransactionService {
             throw new AppException(ResponseCode.INSUFFICIENT_BALANCE);
         }
 
-        // 6. Thực hiện trừ và cộng tiền
+        // 6. Kiểm tra hạn mức giao dịch trong ngày (Daily Limit)
+        BigDecimal dailySpent = transactionRepository.sumDailyOutflow(lockedSender.getId());
+        BigDecimal totalAfterTransfer = dailySpent.add(request.getAmount());
+        if (totalAfterTransfer.compareTo(lockedSender.getDailyLimit()) > 0) {
+            throw new AppException(ResponseCode.DAILY_LIMIT_EXCEEDED);
+        }
+
+        // 7. Thực hiện trừ và cộng tiền
         lockedSender.setBalance(lockedSender.getBalance().subtract(request.getAmount()));
         lockedReceiver.setBalance(lockedReceiver.getBalance().add(request.getAmount()));
 
         accountRepository.save(lockedSender);
         accountRepository.save(lockedReceiver);
 
-        // 7. Lưu lịch sử giao dịch
+        // 8. Lưu lịch sử giao dịch
         String txnCode = "TXN" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
         Transaction transaction = Transaction.builder()
                 .transactionCode(txnCode)
@@ -94,7 +102,66 @@ public class TransactionServiceImpl implements TransactionService {
                 .fromAccount(lockedSender)
                 .toAccount(lockedReceiver)
                 .build();
-        
+
+        transactionRepository.save(transaction);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void atmDeposit(AtmTransactionRequest request) {
+        Account account = accountRepository.findByAccountNumberAndUserIdForUpdate(request.getAccountNumber(), getCurrentUserId())
+                .orElseThrow(() -> new AppException(ResponseCode.BANK_ACCOUNT_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getTransactionPin(), account.getTransactionPin())) {
+            throw new AppException(ResponseCode.INVALID_OLD_PIN);
+        }
+
+        account.setBalance(account.getBalance().add(request.getAmount()));
+        accountRepository.save(account);
+
+        String txnCode = "ATM_DEP_" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        Transaction transaction = Transaction.builder()
+                .transactionCode(txnCode)
+                .amount(request.getAmount())
+                .description("Nạp tiền tại ATM")
+                .status("SUCCESS")
+                .fromAccount(null)
+                .toAccount(account)
+                .build();
+        transactionRepository.save(transaction);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void atmWithdraw(AtmTransactionRequest request) {
+        Account account = accountRepository.findByAccountNumberAndUserIdForUpdate(request.getAccountNumber(), getCurrentUserId())
+                .orElseThrow(() -> new AppException(ResponseCode.BANK_ACCOUNT_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getTransactionPin(), account.getTransactionPin())) {
+            throw new AppException(ResponseCode.INVALID_OLD_PIN);
+        }
+
+        if (account.getBalance().compareTo(request.getAmount()) < 0) {
+            throw new AppException(ResponseCode.INSUFFICIENT_BALANCE);
+        }
+
+        BigDecimal dailySpent = transactionRepository.sumDailyOutflow(account.getId());
+        if (dailySpent.add(request.getAmount()).compareTo(account.getDailyLimit()) > 0) {
+            throw new AppException(ResponseCode.DAILY_LIMIT_EXCEEDED);
+        }
+
+        account.setBalance(account.getBalance().subtract(request.getAmount()));
+        accountRepository.save(account);
+
+        String txnCode = "ATM_WDL_" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        Transaction transaction = Transaction.builder()
+                .transactionCode(txnCode)
+                .amount(request.getAmount())
+                .description("Rút tiền tại ATM")
+                .status("SUCCESS")
+                .fromAccount(account)
+                .toAccount(null)
+                .build();
         transactionRepository.save(transaction);
     }
 
@@ -102,16 +169,16 @@ public class TransactionServiceImpl implements TransactionService {
     public Page<StatementResponse> getStatement(Long accountId, Pageable pageable) {
         Account myAccount = getOwnedAccount(accountId);
         Page<StatementResponse> statements = transactionRepository.findAllByAccountId(myAccount.getId(), pageable);
-        
+
         // Gắn nhãn động CREDIT/DEBIT
         statements.forEach(statement -> {
-            if (statement.getFromAccountId().equals(myAccount.getId())) {
+            if (myAccount.getId().equals(statement.getFromAccountId())) {
                 statement.setType(TransactionType.DEBIT); // Trừ tiền
-            } else {
+            } else if (myAccount.getId().equals(statement.getToAccountId())) {
                 statement.setType(TransactionType.CREDIT); // Cộng tiền
             }
         });
-        
+
         return statements;
     }
 
@@ -120,8 +187,12 @@ public class TransactionServiceImpl implements TransactionService {
      * Đảm bảo accountId truyền vào ĐÚNG LÀ thuộc về User đang đăng nhập.
      */
     private Account getOwnedAccount(Long accountId) {
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return accountRepository.findByIdAndUserId(accountId, userDetails.getId())
+        return accountRepository.findByIdAndUserId(accountId, getCurrentUserId())
                 .orElseThrow(() -> new AppException(ResponseCode.ACCOUNT_NOT_OWNED));
+    }
+
+    private Long getCurrentUserId() {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return userDetails.getId();
     }
 }

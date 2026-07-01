@@ -85,7 +85,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .orElseThrow(() -> new RuntimeException("Role CUSTOMER không tồn tại"));
 
             User testUser = new User();
-            testUser.setUsername("dinhlu");
+            testUser.setUsername("testuser");
             testUser.setPassword(passwordEncoder.encode("Abcd@1234"));
             testUser.setEmail("testuser@rebank.com");
             testUser.setPhoneNumber("0987654321");
@@ -118,7 +118,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             accountRepository.save(testAccount2);
 
-            log.info("Đã tạo tài khoản Test User (dinhlu / Abcd@1234) với 2 thẻ ngân hàng (9999999999 - 5tr, 8888888888 - 10tr). Mã PIN chung: 123456");
+            log.info("Đã tạo tài khoản Test User (testuser / Abcd@1234) với 2 thẻ ngân hàng (9999999999 - 5tr, 8888888888 - 10tr). Mã PIN chung: 123456");
         }
 
         // Khởi tạo tài khoản Customer 2 mẫu để test chuyển khoản khác người

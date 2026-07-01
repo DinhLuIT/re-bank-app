@@ -39,6 +39,10 @@ public class Account {
     @Builder.Default
     private Boolean active = true;
 
+    @Column(nullable = false, precision = 19, scale = 4)
+    @Builder.Default
+    private BigDecimal dailyLimit = new BigDecimal("50000000");
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 

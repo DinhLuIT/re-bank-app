@@ -37,10 +37,10 @@ public class Transaction {
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "from_account_id", nullable = false)
+    @JoinColumn(name = "from_account_id")
     private Account fromAccount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "to_account_id", nullable = false)
+    @JoinColumn(name = "to_account_id")
     private Account toAccount;
 }

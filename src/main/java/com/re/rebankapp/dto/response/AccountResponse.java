@@ -17,6 +17,7 @@ public class AccountResponse {
     private Long id;
     private String accountNumber;
     private BigDecimal balance;
+    private BigDecimal dailyLimit;
     private String currency;
     private Boolean active;
     private LocalDateTime createdAt;

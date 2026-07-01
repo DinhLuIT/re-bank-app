@@ -25,6 +25,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -129,6 +131,16 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(ResponseCode.FORBIDDEN.getHttpStatus()).body(response);
+    }
+
+    // BẮT LỖI TRÙNG RÀNG BUỘC DỮ LIỆU (VD: Email hoặc SĐT đã tồn tại)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(DataIntegrityViolationException exception) {
+        log.warn("Vi phạm ràng buộc dữ liệu (Unique Constraint): {}", exception.getMostSpecificCause().getMessage());
+
+        ApiResponse<Void> response = ApiResponse.error(ResponseCode.DATA_ALREADY_EXISTS);
+
+        return ResponseEntity.status(ResponseCode.DATA_ALREADY_EXISTS.getHttpStatus()).body(response);
     }
 
     // BẮT LỖI SAI ĐƯỜNG DẪN API (404 Not Found)
