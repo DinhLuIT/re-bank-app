@@ -59,6 +59,7 @@ class TransactionServiceImplTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
         lenient().when(authentication.getPrincipal()).thenReturn(userDetails);
+        lenient().when(transactionRepository.sumDailyOutflow(anyLong())).thenReturn(BigDecimal.ZERO);
 
         // Chuẩn bị dữ liệu mẫu (Mock Data)
         sourceAccount = new Account();
@@ -67,6 +68,7 @@ class TransactionServiceImplTest {
         sourceAccount.setBalance(new BigDecimal("5000000"));
         sourceAccount.setTransactionPin("encoded_pin");
         sourceAccount.setActive(true);
+        sourceAccount.setIsPinChanged(true);
 
         targetAccount = new Account();
         targetAccount.setId(20L);

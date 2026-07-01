@@ -222,6 +222,9 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
+        // Thu hồi toàn bộ Refresh Token cũ để ép các thiết bị đang đăng nhập phải văng ra ngoài
+        refreshTokenService.deleteByUserId(user.getId());
+
         // Xóa token khỏi Redis
         stringRedisTemplate.delete("RESET_TOKEN_" + email);
         
